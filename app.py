@@ -1,6 +1,13 @@
 import streamlit as st
 import requests
 import logging
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:7071/api")
+TOKEN = os.getenv("TOKEN", None)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,17 +30,17 @@ with st.sidebar:
 
         try:
             # Create session
+            session_url = f"{BASE_URL}/create_session" + f'?code={TOKEN}' if TOKEN else ''
             response = requests.post(
-                "http://localhost:7071/api/create_session",
+                session_url,
                 json={"selections": selections}
             )
             response.raise_for_status()
             st.session_state.session_id = response.json()#.get("session_id")
 
             # Get cards
-            cards_response = requests.get("http://localhost:7071/api/get_cards/{session_id}".format(
-                session_id=st.session_state.session_id.get("session_id")
-            ))
+            cards_url = f"{BASE_URL}/get_cards/{st.session_state.session_id.get('session_id')}" + f'?code={TOKEN}' if TOKEN else ''
+            cards_response = requests.get(cards_url)
             cards_response.raise_for_status()
             st.session_state.cards = cards_response.json()
             st.session_state.current_index = 0
@@ -56,7 +63,7 @@ if st.session_state.cards:
     card = st.session_state.cards[st.session_state.current_index]
     st.subheader(f"🃏 Card {st.session_state.current_index + 1}")
     st.json(card)  # display raw card JSON (can be replaced with pretty formatting)
-
+    status_url = f"{BASE_URL}/update_card_status" + f'?code={TOKEN}' if TOKEN else ''
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("⬅ Anterior", key=f"prev_{st.session_state.current_index}"):
@@ -68,7 +75,7 @@ if st.session_state.cards:
         if st.button("👍 Me gusta", key=f"like_{st.session_state.current_index}"):
             try:
                 requests.post(
-                    "http://localhost:7071/api/update_card_status",
+                    status_url,
                     json={
                         # "session_id": st.session_state.session_id,
                         "card_id": card.get("id"),
@@ -89,7 +96,7 @@ if st.session_state.cards:
         if st.button("➡️ Siguiente", key=f"next_{st.session_state.current_index}"):
             try:
                 requests.post(
-                    "http://localhost:7071/api/update_card_status",
+                    status_url,
                     json={
                         "card_id": card.get("id"),
                         "liked": False
