@@ -13,18 +13,23 @@ logging.basicConfig(level=logging.INFO)
 
 st.title("🎴Connect - Questions")
 
+dynamics_respose = requests.get(f"{BASE_URL}/get_dynamics" + f'?code={TOKEN}' if TOKEN else '')
+logging.info(f"Dynamics response: {dynamics_respose.status_code}, {dynamics_respose.text}")
+
 # Sidebar with questions (hidable by default in Streamlit)
 with st.sidebar:
     st.header("⚙️ Configuración de Sesión")
     entorno = st.radio("¿En qué entorno estás?", ["family", "friends", "couple"])
     accion = st.radio("¿Qué quieres hacer?", ["fun", "meet"])
     intimidad = st.selectbox("Nivel de intimidad", ["1", "2", "3", "4"])
+    dinamica = st.selectbox("Dinámica", dynamics_respose.json() if dynamics_respose.status_code == 200 else ["questions"], index=0)
 
     if st.button("Iniciar Sesión"):
         selections = {
             "social_context": entorno,
             "purpose": accion,
-            "tone": intimidad
+            "tone": intimidad,
+            "base": dinamica
         }
         logging.info(f"User selections: {selections}")
 
@@ -77,7 +82,7 @@ if st.session_state.cards:
                 requests.post(
                     status_url,
                     json={
-                        # "session_id": st.session_state.session_id,
+                        "session_id": st.session_state.session_id.get('session_id'),
                         "card_id": card.get("id"),
                         "liked": True
                     }
@@ -98,6 +103,7 @@ if st.session_state.cards:
                 requests.post(
                     status_url,
                     json={
+                        "session_id": st.session_state.session_id.get('session_id'),
                         "card_id": card.get("id"),
                         "liked": False
                     }

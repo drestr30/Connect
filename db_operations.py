@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from psycopg2.extensions import connection
 import psycopg2
@@ -160,6 +161,32 @@ def update_card_status(card_id: int, liked: bool = False):
     conn.commit()
     conn.close()
 
+def create_session_cards(session_id: int, card_ids: list):
+    print('creating session cards ...')
+
+    conn = connect_db()
+    cur = conn.cursor()
+
+    for card_id in card_ids:
+        cur.execute("INSERT INTO session_cards (session_id, card_id, created_at) VALUES (%s, %s, NOW()) RETURNING id;",
+                     (session_id, card_id))
+    conn.commit()
+    conn.close()
+
+def update_session_card(session_id:int , card_id: int, feedback_text: str = None):
+    print('updating session card ...')
+
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("""UPDATE session_cards SET 
+                        feedback_text = %s,
+                        ended_at = NOW()
+                        WHERE session_id = %s AND card_id = %s;""",
+                        (feedback_text, session_id, card_id))
+
+    conn.commit()
+    conn.close()
+
 
 def get_prompt_templates(selection_key: str, selection_value: str) -> list:
     print('getting prompt templates ...')
@@ -168,7 +195,13 @@ def get_prompt_templates(selection_key: str, selection_value: str) -> list:
     rows = query_to_list(query, (selection_key, selection_value), one=False)
     return rows
 
+def get_system_prompt_templates() -> list:
+    print('getting system prompt templates ...')
+
+    query = "SELECT selection_value FROM prompt_templates WHERE selection_key = %s"
+    rows = query_to_list(query, ("base",), one=False)
+    return rows
 if __name__ == "__main__":
-    
-    r = get_prompt_templates("social_context", "friends")
-    print(r)    
+
+    r = get_system_prompt_templates()
+    print(r)

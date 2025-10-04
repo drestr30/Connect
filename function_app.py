@@ -70,6 +70,9 @@ def get_cards(req: func.HttpRequest) -> func.HttpResponse:
                                                 sample_size=SAMPLE_SIZE,
                                                 policy=LIFETIME_POLICY)
         
+        db.create_session_cards(session_id, 
+                                [card['id'] for card in session_cards],)
+        
         return func.HttpResponse(json.dumps(session_cards), 
                                     status_code=200, 
                                     mimetype="application/json")
@@ -83,7 +86,7 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
     except ValueError:
         pass
     else:
-        # session_id = req_body.get('session_id')
+        session_id = req_body.get('session_id', None)
         card_id = req_body.get('card_id')
         liked = req_body.get('liked', None)
 
@@ -94,6 +97,7 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         db.update_card_status(card_id, liked=liked)
+        db.update_session_card(session_id, card_id)
 
         return func.HttpResponse(
             json.dumps({"status": "success"}),
@@ -104,4 +108,17 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(
         "This HTTP triggered function executed successfully. Pass session_id and card_id in the request body for a personalized response.",
         status_code=200
+    )
+
+@app.route(route="get_dynamics", methods=["GET"])
+def get_dynamics(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Get dynamics endpoint hit.')
+
+    templates = db.get_system_prompt_templates()
+    dynamics = [t['selection_value'] for t in templates]
+
+    return func.HttpResponse(
+        json.dumps(dynamics),
+        status_code=200,
+        mimetype="application/json"
     )

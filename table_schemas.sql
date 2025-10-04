@@ -31,9 +31,10 @@ CREATE TABLE prompt_templates (
 
 CREATE TABLE session_cards (
     id SERIAL PRIMARY KEY,
-    session_id INT REFERENCES sessions(id),
-    card_id INT REFERENCES cards(id),
-    feedback_text TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    session_id  int,
+    card_id int,
+    feedback_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP NULL
 );
 

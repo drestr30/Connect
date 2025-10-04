@@ -97,13 +97,7 @@ def format_llm_response(agent_response: str) -> str:
     return response
 
 def format_prompt_templates(selections: dict) -> str:
-    system_message_template = """Create a list of questions words that are perfect for playing with {social_context}. 
-The goal is {purpose}. make sure the words are {tone} and suitable for this type of group. Include 10 questions every round that match these criteria.
-### Guidelines: 
-- Give your answer in Spanish.
-- give you answer in JSON format as a list of items, where each item includes an 'id' and 'description'.
-
-Use the provided selection to customize your response:"""
+    base_dynamic_template = db.get_prompt_templates("base", selections.get("base"))[0]['prompt']
 
     default_user_message = f"""
     Given the following user selections: {selections}, generate a unique combination of 10 items that best match these preferences.
@@ -111,9 +105,16 @@ Use the provided selection to customize your response:"""
     Provide the output in JSON format as a list of items, where each item includes an 'id' and 'description'.
     """
 
-    system_message = system_message_template.format(**selections)
+    system_guidelines = """### Guidelines:  
+    - Give your answer in Spanish. 
+    - give you answer in JSON format as a list of items, where each item includes an 'id' and 'description'.  
+    Use the provided selection to customize your response:"""
+
+    system_message = base_dynamic_template.format(**selections) + system_guidelines
     prompt_templates = []
     for key, value in selections.items():
+        if key == "base":
+            continue
         try:
             templates = db.get_prompt_templates(key, value)
             prompt_templates.extend(templates)
@@ -149,7 +150,7 @@ if __name__ == "__main__":
         test_selections = {     
             "social_context": "friends",
             "purpose": "meet",
-            "tone": "4"
+            "tone": "2"
         }
         cards = generate_session_cards(test_selections)
         print(cards)
