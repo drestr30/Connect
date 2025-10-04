@@ -11,18 +11,18 @@ TOKEN = os.getenv("TOKEN", None)
 
 logging.basicConfig(level=logging.INFO)
 
-st.title("🎴Connect - Questions")
+st.title("🎴Connect")
 
-dynamics_respose = requests.get(f"{BASE_URL}/get_dynamics" + f'?code={TOKEN}' if TOKEN else '')
-logging.info(f"Dynamics response: {dynamics_respose.status_code}, {dynamics_respose.text}")
+dynamics_response = requests.get(f"{BASE_URL}/get_dynamics" + f'?code={TOKEN}' if TOKEN else '')
+logging.info(f"Dynamics response: {dynamics_response.status_code}, {dynamics_response.text}")
 
 # Sidebar with questions (hidable by default in Streamlit)
 with st.sidebar:
-    st.header("⚙️ Configuración de Sesión")
+    st.header("⚙️ Configuración de Sesión") 
     entorno = st.radio("¿En qué entorno estás?", ["family", "friends", "couple"])
     accion = st.radio("¿Qué quieres hacer?", ["fun", "meet"])
     intimidad = st.selectbox("Nivel de intimidad", ["1", "2", "3", "4"])
-    dinamica = st.selectbox("Dinámica", dynamics_respose.json() if dynamics_respose.status_code == 200 else ["questions"], index=0)
+    dinamica = st.selectbox("Dinámica", dynamics_response.json() if dynamics_response.status_code == 200 else ["questions"], index=0)
 
     if st.button("Iniciar Sesión"):
         selections = {
