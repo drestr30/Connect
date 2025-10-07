@@ -187,6 +187,12 @@ def update_session_card(session_id:int , card_id: int, feedback_text: str = None
     conn.commit()
     conn.close()
 
+def get_dynamics() -> list:
+    print('getting dynamics ...')
+
+    query = "SELECT id, name, title, description FROM dynamics"
+    rows = query_to_list(query, (), one=False)
+    return rows
 
 def get_prompt_templates(selection_key: str, selection_value: str) -> list:
     print('getting prompt templates ...')

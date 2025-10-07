@@ -29,6 +29,14 @@ CREATE TABLE prompt_templates (
     template_order INT
 );
 
+CREATE TABLE dynamics (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    title TEXT,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE session_cards (
     id SERIAL PRIMARY KEY,
     session_id  int,

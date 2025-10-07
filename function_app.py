@@ -20,8 +20,9 @@ def create_session(req: func.HttpRequest) -> func.HttpResponse:
         pass
     else:
         selections = req_body.get('selections')
+        selections['dynamic'] = selections['dynamic'].lower()
         selection_name = "-".join([str(v) for v in selections.values()]) 
-        selection_hash = generate_hash_str(json.dumps(selections))
+        selection_hash = generate_hash_str(selection_name)
         logging.info(f"Received selections: {selection_name} with hash {selection_hash}")
         session_id = db.start_session(selections, selection_name, selection_hash)
         sys, user =  llm.format_prompt_templates(selections)
@@ -114,8 +115,12 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
 def get_dynamics(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Get dynamics endpoint hit.')
 
-    templates = db.get_system_prompt_templates()
-    dynamics = [t['selection_value'] for t in templates]
+    # templates = db.get_system_prompt_templates()
+    dynamics = db.get_dynamics()
+    logging.info(f"Retrieved dynamics: {dynamics}")
+    # dynamics = {"name": [t['selection_value'] for t in templates]}
+    # dynamics_name = [t['selection_value'] for t in templates]
+    # dynamics = {"name": dynamics_name}
 
     return func.HttpResponse(
         json.dumps(dynamics),

@@ -97,7 +97,7 @@ def format_llm_response(agent_response: str) -> str:
     return response
 
 def format_prompt_templates(selections: dict) -> str:
-    base_dynamic_template = db.get_prompt_templates("base", selections.get("base"))[0]['prompt']
+    base_dynamic_template = db.get_prompt_templates("base", selections.get("dynamic"))[0]['prompt']
 
     default_user_message = f"""
     Given the following user selections: {selections}, generate a unique combination of 10 items that best match these preferences.
@@ -113,7 +113,7 @@ def format_prompt_templates(selections: dict) -> str:
     system_message = base_dynamic_template.format(**selections) + system_guidelines
     prompt_templates = []
     for key, value in selections.items():
-        if key == "base":
+        if key == "dynamic":
             continue
         try:
             templates = db.get_prompt_templates(key, value)
