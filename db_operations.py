@@ -190,12 +190,16 @@ def update_session_card(session_id:int , card_id: int, feedback_text: str = None
 def get_dynamics() -> list:
     print('getting dynamics ...')
 
-    query = "SELECT id, name, title, description FROM dynamics"
+    query = "SELECT id, name, title, description FROM dynamics ORDER BY id"
     rows = query_to_list(query, (), one=False)
     return rows
 
 def get_prompt_templates(selection_key: str, selection_value: str) -> list:
     print('getting prompt templates ...')
+
+    # Convert booleans to lowercase strings if needed (for consistent storage)
+    if isinstance(selection_value, bool):
+        selection_value = str(selection_value).lower()
 
     query = "SELECT * FROM prompt_templates WHERE selection_key = %s AND selection_value = %s"
     rows = query_to_list(query, (selection_key, selection_value), one=False)
@@ -209,5 +213,5 @@ def get_system_prompt_templates() -> list:
     return rows
 if __name__ == "__main__":
 
-    r = get_system_prompt_templates()
+    r = get_prompt_templates("hot", True)
     print(r)

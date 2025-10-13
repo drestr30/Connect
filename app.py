@@ -23,6 +23,8 @@ with st.sidebar:
     entorno = st.radio("¿En qué entorno estás?", ["family", "friends", "couple"])
     accion = st.radio("¿Qué quieres hacer?", ["fun", "meet"])
     intimidad = st.selectbox("Nivel de intimidad", ["1", "2", "3", "4"])
+    hot = st.checkbox("¿Quieres preguntas picantes?", value=False)
+    drink = st.checkbox("¿Quieres preguntas para beber?", value=False)
     dinamica = st.selectbox("Dinámica", [dynamic["name"] for dynamic in dynamics])
 
     if st.button("Iniciar Sesión"):
@@ -30,8 +32,11 @@ with st.sidebar:
             "social_context": entorno,
             "purpose": accion,
             "tone": intimidad,
-            "dynamic": dinamica
+            "dynamic": dinamica,
+            "hot": hot,
+            "drink": drink
         }
+    
         logging.info(f"User selections: {selections}")
 
         try:

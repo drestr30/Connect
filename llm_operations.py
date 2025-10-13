@@ -147,10 +147,11 @@ def generate_session_cards(selections: dict) -> list:
     
 if __name__ == "__main__":
     
-        test_selections = {     
-            "social_context": "friends",
-            "purpose": "meet",
-            "tone": "2"
-        }
-        cards = generate_session_cards(test_selections)
-        print(cards)
+    test_selections = {'social_context': 'family', 
+                        'purpose': 'fun', 
+                        'tone': '1', 
+                        'dynamic': 'questions', 
+                        'hot': True, 
+                        'drink': True}
+    sys, user = format_prompt_templates(test_selections)
+    print(user)

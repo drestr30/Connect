@@ -1,11 +1,11 @@
 import json
+import traceback
 import azure.functions as func
 # from requests import options
 import db_operations as db
 import llm_operations as llm
 from utils import generate_hash_str
 import logging
-# from connect_main import generate_session_cards
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
         
@@ -21,9 +21,12 @@ def create_session(req: func.HttpRequest) -> func.HttpResponse:
     else:
         selections = req_body.get('selections')
         selections['dynamic'] = selections['dynamic'].lower()
-        selection_name = "-".join([str(v) for v in selections.values()]) 
+        selection_name = "-".join([k if isinstance(v, bool) and v else str(v)
+                                for k, v in selections.items()
+                                if (isinstance(v, str)) or (isinstance(v, bool) and v)])
+        
         selection_hash = generate_hash_str(selection_name)
-        logging.info(f"Received selections: {selection_name} with hash {selection_hash}")
+        logging.info(f"Received selections: {selection_name} with selections {selections}")
         session_id = db.start_session(selections, selection_name, selection_hash)
         sys, user =  llm.format_prompt_templates(selections)
         logging.info(f"Started session with ID: {session_id}")
@@ -54,30 +57,38 @@ def get_cards(req: func.HttpRequest) -> func.HttpResponse:
         )
     else:
 
-        session_info = db.get_session(session_id)
-        logging.info(f"Retrieved session info: {session_info['selection_name']}")
-        available_cards = db.get_cards_by_hash(session_info['selection_hash'], policy=LIFETIME_POLICY)
-        logging.info(f"Retrieved session cards with {len(available_cards)} cards")
+        try:
+            session_info = db.get_session(session_id)
+            logging.info(f"Retrieved session info: {session_info['selection_name']}")
+            available_cards = db.get_cards_by_hash(session_info['selection_hash'], policy=LIFETIME_POLICY)
+            logging.info(f"Retrieved session cards with {len(available_cards)} cards")
 
-        if len(available_cards) < SAMPLE_SIZE:
-            logging.info("Not enough cards found, generating new cards...")
-            generated_cards = llm.generate_session_cards(session_info['selection'])
-            new_cards = [card['description'] for card in generated_cards]
-            card_ids = db.create_cards(new_cards, session_info['selection_hash'], session_info['selection_name'])
-            for card_id in card_ids:
-                logging.info(f"Created new card with ID: {card_id}")
-        # else: 
-        session_cards = db.sample_cards_by_hash(session_info['selection_hash'], 
-                                                sample_size=SAMPLE_SIZE,
-                                                policy=LIFETIME_POLICY)
+            if len(available_cards) < SAMPLE_SIZE:
+                logging.info("Not enough cards found, generating new cards...")
+                generated_cards = llm.generate_session_cards(session_info['selection'])
+                new_cards = [card['description'] for card in generated_cards]
+                card_ids = db.create_cards(new_cards, session_info['selection_hash'], session_info['selection_name'])
+                for card_id in card_ids:
+                    logging.info(f"Created new card with ID: {card_id}")
+            # else: 
+            session_cards = db.sample_cards_by_hash(session_info['selection_hash'], 
+                                                    sample_size=SAMPLE_SIZE,
+                                                    policy=LIFETIME_POLICY)
+            
+            db.create_session_cards(session_id, 
+                                    [card['id'] for card in session_cards],)
+            
+            return func.HttpResponse(json.dumps(session_cards), 
+                                        status_code=200, 
+                                        mimetype="application/json")
+        except Exception as e:
+            logging.error(f"Error retrieving or generating cards: {e}")
+            logging.error(traceback.format_exc())
+            return func.HttpResponse(
+                f"Error processing request: {e}",
+                status_code=500
+            )
         
-        db.create_session_cards(session_id, 
-                                [card['id'] for card in session_cards],)
-        
-        return func.HttpResponse(json.dumps(session_cards), 
-                                    status_code=200, 
-                                    mimetype="application/json")
-    
 @app.route(route="update_card_status", methods=["POST"])
 def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
@@ -90,6 +101,7 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
         session_id = req_body.get('session_id', None)
         card_id = req_body.get('card_id')
         liked = req_body.get('liked', None)
+        disliked = req_body.get('disliked', None)
 
         if not card_id:
             return func.HttpResponse(
@@ -115,12 +127,8 @@ def update_card_status(req: func.HttpRequest) -> func.HttpResponse:
 def get_dynamics(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Get dynamics endpoint hit.')
 
-    # templates = db.get_system_prompt_templates()
     dynamics = db.get_dynamics()
     logging.info(f"Retrieved dynamics: {dynamics}")
-    # dynamics = {"name": [t['selection_value'] for t in templates]}
-    # dynamics_name = [t['selection_value'] for t in templates]
-    # dynamics = {"name": dynamics_name}
 
     return func.HttpResponse(
         json.dumps(dynamics),
