@@ -190,7 +190,8 @@ def update_session_card(session_id:int , card_id: int, feedback_text: str = None
 def get_dynamics() -> list:
     print('getting dynamics ...')
 
-    query = "SELECT id, name, title, description FROM dynamics ORDER BY id"
+    query = """SELECT id, name, title, description FROM dynamics
+                WHERE enabled = true ORDER BY id"""
     rows = query_to_list(query, (), one=False)
     return rows
 

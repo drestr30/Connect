@@ -48,9 +48,8 @@ def call_llm(system_message, user_message, temperature=0.2):
                 "content": user_message,
             }
         ],
-        max_tokens=1024,
-        temperature=temperature,
         model=os.environ['LLM_DEPLOYMENT'],
+        reasoning_effort = 'minimal'
     )
     return response.choices[0].message.content
 
@@ -105,10 +104,7 @@ def format_prompt_templates(selections: dict) -> str:
     Provide the output in JSON format as a list of items, where each item includes an 'id' and 'description'.
     """
 
-    system_guidelines = """### Guidelines:  
-    - Give your answer in Spanish. 
-    - give you answer in JSON format as a list of items, where each item includes an 'id' and 'description'.  
-    Use the provided selection to customize your response:"""
+    system_guidelines = db.get_prompt_templates("system", "guidelines")[0]['prompt']
 
     system_message = base_dynamic_template.format(**selections) + system_guidelines
     prompt_templates = []
